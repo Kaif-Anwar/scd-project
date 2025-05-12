@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scd-frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: scd-frontend
+  template:
+    metadata:
+      labels:
+        app: scd-frontend
+    spec:
+      containers:
+      - name: scd-frontend
+        image: scd_project_frontend:latest
+        ports:
+        - containerPort: 80

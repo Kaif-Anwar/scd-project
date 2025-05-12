@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: scd-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: scd-backend
+  template:
+    metadata:
+      labels:
+        app: scd-backend
+    spec:
+      containers:
+      - name: scd-backend
+        image: scd_project:latest
+        ports:
+        - containerPort: 5000
+        env:
+        - name: MONGO_URL
+          value: "mongodb+srv://i222668:kaifanwar@cluster0.cq2pq4v.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
