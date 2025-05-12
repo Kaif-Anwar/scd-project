@@ -14,7 +14,7 @@ spec:
     spec:
       containers:
       - name: scd-backend
-        image: scd_project:latest
+        image: kaifanwar/scd_project:latest
         ports:
         - containerPort: 5000
         env:
