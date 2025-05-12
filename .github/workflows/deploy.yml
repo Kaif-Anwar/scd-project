@@ -1,0 +1,44 @@
+name: Build and Deploy to Minikube
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build-deploy:
+    runs-on: self-hosted
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker to use Minikube's environment
+      run: |
+        echo "Configuring Docker to use Minikube's daemon..."
+        eval $(minikube docker-env)
+
+    - name: Build Backend Docker image
+      run: |
+        cd backend
+        docker build -t kaifanwar/scd_project:latest .
+
+    - name: Build Frontend Docker image
+      run: |
+        cd frontend
+        docker build -t kaifanwar/scd_project_frontend:latest .
+
+    - name: Login to Docker Hub
+      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+
+    - name: Push Backend Docker image to Docker Hub
+      run: docker push kaifanwar/scd_project:latest
+
+    - name: Push Frontend Docker image to Docker Hub
+      run: docker push kaifanwar/scd_project_frontend:latest
+
+    - name: Deploy to Minikube
+      run: |
+        kubectl apply -f backend-deployment.yaml
+        kubectl apply -f backend-service.yaml
+        kubectl apply -f frontend-deployment.yaml
+        kubectl apply -f frontend-service.yaml
