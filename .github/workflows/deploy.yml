@@ -35,23 +35,23 @@ jobs:
 
     - name: Debug Docker Credentials
       run: |
-        Write-Output "Username: ${{ secrets.DOCKER_USERNAME }}"
-        Write-Output "Username Length: $(${{ secrets.DOCKER_USERNAME }}.Length)"
-        Write-Output "Password Length: $(${{ secrets.DOCKER_PASSWORD }}.Length)"
-        Write-Output "Password First Char: $(${{ secrets.DOCKER_PASSWORD }}[0])"
+        $username = "${{ secrets.DOCKER_USERNAME }}"
+        $password = "${{ secrets.DOCKER_PASSWORD }}"
+        Write-Output "Username: $username"
+        Write-Output "Username Length: $($username.Length)"
+        Write-Output "Password Length: $($password.Length)"
+        Write-Output "Password First Char: $($password[0])"
 
     - name: Test Docker Login Command
       run: |
-        $password = "${{ secrets.DOCKER_PASSWORD }}"
-        $password = $password.Trim() # Remove any whitespace
+        $password = "${{ secrets.DOCKER_PASSWORD }}".Trim()
         Write-Output "Testing login with password length: $($password.Length)"
         echo $password | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
     - name: Login to Docker Hub
       run: |
         Write-Output "Attempting Docker login..."
-        $password = "${{ secrets.DOCKER_PASSWORD }}"
-        $password = $password.Trim() # Remove any whitespace
+        $password = "${{ secrets.DOCKER_PASSWORD }}".Trim()
         Write-Output "Password length after trim: $($password.Length)"
         echo $password | Out-File -FilePath "docker-password.txt"
         Get-Content "docker-password.txt" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
