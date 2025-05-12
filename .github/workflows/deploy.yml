@@ -15,13 +15,22 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v3
 
+    - name: Ensure Minikube is Running
+      run: |
+        Write-Output "Checking Minikube status..."
+        minikube status
+        if ($LASTEXITCODE -ne 0) { minikube start }
+
     - name: Set up Docker to use Minikube's environment
       run: |
         Write-Output "Configuring Docker to use Minikube's daemon..."
         & minikube docker-env | Invoke-Expression
+        $daemon = docker info --format '{{.Name}}'
+        Write-Output "Docker daemon in use: $daemon"
+        if ($daemon -ne 'minikube') { throw "Failed to set Minikube Docker daemon. Current daemon: $daemon" }
 
     - name: Debug Docker Environment
-      run: docker info --format '{{.Name}}'
+      run: docker info --format '{{.ServerVersion}}'
 
     - name: Build Backend Docker image
       run: |
@@ -44,9 +53,13 @@ jobs:
 
     - name: Test Docker Login Command
       run: |
+        $username = "${{ secrets.DOCKER_USERNAME }}"
         $password = "${{ secrets.DOCKER_PASSWORD }}".Trim()
+        Write-Output "Testing login with username: $username"
         Write-Output "Testing login with password length: $($password.Length)"
-        echo $password | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        Write-Output "Executing login command..."
+        echo $password | docker login -u $username --password-stdin
+        if ($LASTEXITCODE -ne 0) { throw "Docker login failed with exit code $LASTEXITCODE" }
 
     - name: Login to Docker Hub
       run: |
