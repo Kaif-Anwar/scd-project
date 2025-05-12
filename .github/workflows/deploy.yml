@@ -43,14 +43,20 @@ jobs:
     - name: Test Docker Login Command
       run: |
         $password = "${{ secrets.DOCKER_PASSWORD }}"
-        Write-Output "Testing login with password: $password"
+        $password = $password.Trim() # Remove any whitespace
+        Write-Output "Testing login with password length: $($password.Length)"
         echo $password | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
     - name: Login to Docker Hub
       run: |
         Write-Output "Attempting Docker login..."
-        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        $password = "${{ secrets.DOCKER_PASSWORD }}"
+        $password = $password.Trim() # Remove any whitespace
+        Write-Output "Password length after trim: $($password.Length)"
+        echo $password | Out-File -FilePath "docker-password.txt"
+        Get-Content "docker-password.txt" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
         if ($LASTEXITCODE -ne 0) { throw "Docker login failed with exit code $LASTEXITCODE" }
+        Remove-Item "docker-password.txt"
 
     - name: Push Backend Docker image to Docker Hub
       run: docker push kaifanwar/scd_project:latest
