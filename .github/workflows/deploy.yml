@@ -29,53 +29,34 @@ jobs:
         Write-Output "Docker daemon in use: $daemon"
         if ($daemon -ne 'minikube') { throw "Failed to set Minikube Docker daemon. Current daemon: $daemon" }
 
-    - name: Debug Docker Environment
-      run: docker info --format '{{.ServerVersion}}'
+    - name: Login to Docker Hub
+      run: |
+        Write-Output "Logging into Docker Hub..."
+        $password = "${{ secrets.DOCKER_PASSWORD }}".Trim()
+        $username = "${{ secrets.DOCKER_USERNAME }}".Trim()
+        Write-Output "Username: $username"
+        Write-Output "Password length: $($password.Length)"
+        Write-Output "Password first char: $($password[0])"
+        echo $password | docker login -u $username --password-stdin
+        if ($LASTEXITCODE -ne 0) { throw "Docker login failed with exit code $LASTEXITCODE" }
 
-    - name: Build Backend Docker image
+    - name: Build Backend Docker Image
       run: |
         Set-Location backend
         docker build -t kaifanwar/scd_project:latest .
 
-    - name: Build Frontend Docker image
+    - name: Build Frontend Docker Image
       run: |
         Set-Location frontend
         docker build -t kaifanwar/scd_project_frontend:latest .
 
-    - name: Debug Docker Credentials
+    - name: Push Backend Docker Image
       run: |
-        $username = "${{ secrets.DOCKER_USERNAME }}"
-        $password = "${{ secrets.DOCKER_PASSWORD }}"
-        Write-Output "Username: $username"
-        Write-Output "Username Length: $($username.Length)"
-        Write-Output "Password Length: $($password.Length)"
-        Write-Output "Password First Char: $($password[0])"
+        docker push kaifanwar/scd_project:latest
 
-    - name: Test Docker Login Command
+    - name: Push Frontend Docker Image
       run: |
-        $username = "${{ secrets.DOCKER_USERNAME }}"
-        $password = "${{ secrets.DOCKER_PASSWORD }}".Trim()
-        Write-Output "Testing login with username: $username"
-        Write-Output "Testing login with password length: $($password.Length)"
-        Write-Output "Executing login command..."
-        echo $password | docker login -u $username --password-stdin
-        if ($LASTEXITCODE -ne 0) { throw "Docker login failed with exit code $LASTEXITCODE" }
-
-    - name: Login to Docker Hub
-      run: |
-        Write-Output "Attempting Docker login..."
-        $password = "${{ secrets.DOCKER_PASSWORD }}".Trim()
-        Write-Output "Password length after trim: $($password.Length)"
-        echo $password | Out-File -FilePath "docker-password.txt"
-        Get-Content "docker-password.txt" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
-        if ($LASTEXITCODE -ne 0) { throw "Docker login failed with exit code $LASTEXITCODE" }
-        Remove-Item "docker-password.txt"
-
-    - name: Push Backend Docker image to Docker Hub
-      run: docker push kaifanwar/scd_project:latest
-
-    - name: Push Frontend Docker image to Docker Hub
-      run: docker push kaifanwar/scd_project_frontend:latest
+        docker push kaifanwar/scd_project_frontend:latest
 
     - name: Deploy to Minikube
       run: |
