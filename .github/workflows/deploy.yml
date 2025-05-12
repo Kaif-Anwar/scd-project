@@ -7,6 +7,9 @@ on:
 jobs:
   build-deploy:
     runs-on: self-hosted
+    defaults:
+      run:
+        shell: powershell
 
     steps:
     - name: Checkout code
@@ -14,26 +17,40 @@ jobs:
 
     - name: Set up Docker to use Minikube's environment
       run: |
-        echo "Configuring Docker to use Minikube's daemon..."
+        Write-Output "Configuring Docker to use Minikube's daemon..."
         & minikube docker-env | Invoke-Expression
+
+    - name: Debug Docker Environment
+      run: docker info --format '{{.Name}}'
 
     - name: Build Backend Docker image
       run: |
-        cd backend
+        Set-Location backend
         docker build -t kaifanwar/scd_project:latest .
 
     - name: Build Frontend Docker image
       run: |
-        cd frontend
+        Set-Location frontend
         docker build -t kaifanwar/scd_project_frontend:latest .
 
     - name: Debug Docker Credentials
       run: |
-        echo "Username: ${{ secrets.DOCKER_USERNAME }}"
-        echo "Password: ***"
+        Write-Output "Username: ${{ secrets.DOCKER_USERNAME }}"
+        Write-Output "Username Length: $(${{ secrets.DOCKER_USERNAME }}.Length)"
+        Write-Output "Password Length: $(${{ secrets.DOCKER_PASSWORD }}.Length)"
+        Write-Output "Password First Char: $(${{ secrets.DOCKER_PASSWORD }}[0])"
+
+    - name: Test Docker Login Command
+      run: |
+        $password = "${{ secrets.DOCKER_PASSWORD }}"
+        Write-Output "Testing login with password: $password"
+        echo $password | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
 
     - name: Login to Docker Hub
-      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+      run: |
+        Write-Output "Attempting Docker login..."
+        echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+        if ($LASTEXITCODE -ne 0) { throw "Docker login failed with exit code $LASTEXITCODE" }
 
     - name: Push Backend Docker image to Docker Hub
       run: docker push kaifanwar/scd_project:latest
@@ -47,4 +64,3 @@ jobs:
         kubectl apply -f backend-service.yaml
         kubectl apply -f frontend-deployment.yaml
         kubectl apply -f frontend-service.yaml
-        
